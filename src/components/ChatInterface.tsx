@@ -1,47 +1,48 @@
-import { useState, useRef, useEffect } from "react";
-import { useQuery, useMutation, useAction } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
-import { SignOutButton } from "../SignOutButton";
-import { MessageList } from "./MessageList";
-import { MessageInput } from "./MessageInput";
-import { Sidebar } from "./Sidebar";
-import { SettingsModal } from "./SettingsModal";
-import { toast } from "sonner";
+import { useState, useRef, useEffect } from 'react';
+import { useQuery, useMutation, useAction } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { Id } from '../../convex/_generated/dataModel';
+import { SignOutButton } from '../SignOutButton';
+import { MessageList } from './MessageList';
+import { MessageInput } from './MessageInput';
+import { Sidebar } from './Sidebar';
+import { SettingsModal } from './SettingsModal';
+import { toast } from 'sonner';
+import { Button } from './ui/button';
+import { HelpCircleIcon, SettingsIcon } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 interface ChatInterfaceProps {
   user: any;
   onShowOnboarding: () => void;
+  chatId: string;
 }
 
 export function ChatInterface({ user, onShowOnboarding }: ChatInterfaceProps) {
-  const [currentChatId, setCurrentChatId] = useState<Id<"chats"> | null>(null);
+  const { chatid } = useParams();
+  const navigate = useNavigate();
+  const chatId = chatid as Id<'chats'> | null;
+
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const chats = useQuery(api.chats.listChats);
-  const currentChat = useQuery(
-    api.chats.getChat,
-    currentChatId ? { chatId: currentChatId } : "skip"
-  );
+  const currentChat = useQuery(api.chats.getChat, chatId ? { chatId } : 'skip');
   const messages = useQuery(
     api.chats.getChatMessages,
-    currentChatId ? { chatId: currentChatId } : "skip"
+    chatId ? { chatId } : 'skip'
   );
+
   const models = useAction(api.ai.getAvailableModels);
   const getActiveApiKey = useAction(api.apiKeysActions.getActiveApiKey);
-
   const createChat = useMutation(api.chats.createChat);
+  const generateImage = useAction(api.ai.generateImage);
   const sendMessage = useAction(api.ai.sendMessage);
-  const addMessage = useMutation(api.chats.addMessage);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  const scrollToBottom = () =>
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -49,48 +50,65 @@ export function ChatInterface({ user, onShowOnboarding }: ChatInterfaceProps) {
   const handleNewChat = async () => {
     try {
       const availableModels = await models();
-      const defaultModel = availableModels[0]?.id || "gemini-1.5-flash";
-      
-      const chatId = await createChat({
-        title: "New Chat",
+      const defaultModel =
+        availableModels[0]?.id || 'gemini-2.5-flash-preview-05-20';
+      const newChatId = await createChat({
+        title: 'New Chat',
         model: defaultModel,
       });
-      setCurrentChatId(chatId);
+      navigate(`/chat/${newChatId}`);
     } catch (error) {
-      toast.error("Failed to create new chat");
+      toast.error('Failed to create new chat');
     }
   };
 
   const handleSendMessage = async (content: string, selectedModel?: string) => {
-    if (!currentChatId) {
+    if (!chatId) {
       await handleNewChat();
       return;
     }
 
     setIsLoading(true);
     try {
-      const model = selectedModel || currentChat?.model || "gemini-1.5-flash";
-      
-      // Get the active API key
-      const activeApiKey = await getActiveApiKey({ provider: "google" });
-      const apiKey = activeApiKey?.apiKey;
-
-      await sendMessage({
-        chatId: currentChatId,
-        message: content,
-        model,
-        apiKey,
-      });
+      const model =
+        selectedModel || currentChat?.model || 'gemini-2.5-flash-preview-05-20';
+      const apiKey = (await getActiveApiKey({ provider: 'google' }))?.apiKey;
+      await sendMessage({ chatId, message: content, model, apiKey });
     } catch (error) {
-      toast.error("Failed to send message");
-      console.error("Send message error:", error);
+      toast.error('Failed to send message');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChatSelect = (chatId: Id<"chats">) => {
-    setCurrentChatId(chatId);
+  const handleGenerateImage = async (prompt: string) => {
+    if (!chatId) {
+      await handleNewChat();
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Get the active API key
+      const activeApiKey = await getActiveApiKey({ provider: 'google' });
+      const apiKey = activeApiKey?.apiKey;
+
+      await generateImage({
+        chatId: chatId,
+        model: currentChat?.model || 'gemini-2.5-flash-preview-05-20',
+        prompt,
+        apiKey,
+      });
+    } catch (error) {
+      toast.error('Failed to generate image');
+      console.error('Generate image error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChatSelect = (chatId: Id<'chats'>) => {
+    navigate(`/chat/${chatId}`);
   };
 
   return (
@@ -98,7 +116,7 @@ export function ChatInterface({ user, onShowOnboarding }: ChatInterfaceProps) {
       {/* Sidebar */}
       <Sidebar
         chats={chats || []}
-        currentChatId={currentChatId}
+        currentChatId={chatId}
         onChatSelect={handleChatSelect}
         onNewChat={handleNewChat}
         isOpen={sidebarOpen}
@@ -114,17 +132,27 @@ export function ChatInterface({ user, onShowOnboarding }: ChatInterfaceProps) {
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors lg:hidden"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
             <div>
               <h1 className="text-lg font-semibold text-gray-900">
-                {currentChat?.title || "AI Chat"}
+                {currentChat?.title || 'AI Chat'}
               </h1>
               {currentChat && (
                 <p className="text-sm text-gray-500 capitalize">
-                  {currentChat.model.replace("-", " ")}
+                  {currentChat.model.replace('-', ' ')}
                 </p>
               )}
             </div>
@@ -136,32 +164,28 @@ export function ChatInterface({ user, onShowOnboarding }: ChatInterfaceProps) {
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               title="Settings"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+              <SettingsIcon />
             </button>
             <button
               onClick={onShowOnboarding}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               title="Help"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <HelpCircleIcon />
             </button>
             <SignOutButton />
           </div>
         </header>
 
         {/* Chat Content */}
-        <div className="flex-1 flex flex-col">
-          {currentChatId && messages ? (
+        <div className="flex-1 flex flex-col h-screen overflow-hidden">
+          {chatId && messages ? (
             <>
               <MessageList messages={messages} isLoading={isLoading} />
               <div ref={messagesEndRef} />
               <MessageInput
                 onSendMessage={handleSendMessage}
+                onGenrateImage={handleGenerateImage}
                 disabled={isLoading}
                 currentModel={currentChat?.model}
               />
@@ -176,14 +200,10 @@ export function ChatInterface({ user, onShowOnboarding }: ChatInterfaceProps) {
                   Welcome to AI Chat
                 </h2>
                 <p className="text-gray-600 mb-6">
-                  Start a conversation with AI models. Choose from Google's Gemini and other powerful language models.
+                  Start a conversation with AI models. Choose from Google's
+                  Gemini and other powerful language models.
                 </p>
-                <button
-                  onClick={handleNewChat}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                >
-                  Start New Chat
-                </button>
+                <Button onClick={handleNewChat}>Start New Chat</Button>
               </div>
             </div>
           )}

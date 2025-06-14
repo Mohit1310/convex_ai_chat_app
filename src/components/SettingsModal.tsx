@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
+import { XIcon } from "lucide-react";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -55,7 +58,7 @@ export function SettingsModal({ isOpen, onClose, user }: SettingsModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -64,9 +67,7 @@ export function SettingsModal({ isOpen, onClose, user }: SettingsModalProps) {
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <XIcon />
           </button>
         </div>
 
@@ -128,12 +129,12 @@ export function SettingsModal({ isOpen, onClose, user }: SettingsModalProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Key Name
                   </label>
-                  <input
+                  <Input
                     type="text"
                     value={apiKeyForm.keyName}
                     onChange={(e) => setApiKeyForm({ ...apiKeyForm, keyName: e.target.value })}
                     placeholder="e.g., My Google AI Key"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full"
                   />
                 </div>
 
@@ -141,21 +142,20 @@ export function SettingsModal({ isOpen, onClose, user }: SettingsModalProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     API Key
                   </label>
-                  <input
+                  <Input
                     type="password"
                     value={apiKeyForm.apiKey}
                     onChange={(e) => setApiKeyForm({ ...apiKeyForm, apiKey: e.target.value })}
                     placeholder="Enter your API key"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full"
                   />
                 </div>
 
-                <button
+                <Button
                   type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
                 >
                   Save API Key
-                </button>
+                </Button>
               </form>
 
               {/* Existing API Keys */}

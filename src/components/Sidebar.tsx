@@ -1,11 +1,14 @@
-import { useState } from "react";
-import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { Id } from '../../convex/_generated/dataModel';
+import { toast } from 'sonner';
+import { Button } from './ui/button';
+import { PlusIcon, XIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface Chat {
-  _id: Id<"chats">;
+  _id: Id<'chats'>;
   title: string;
   model: string;
   updatedAt: number;
@@ -13,16 +16,23 @@ interface Chat {
 
 interface SidebarProps {
   chats: Chat[];
-  currentChatId: Id<"chats"> | null;
-  onChatSelect: (chatId: Id<"chats">) => void;
+  currentChatId?: Id<'chats'> | null;
+  onChatSelect: (chatId: Id<'chats'>) => void;
   onNewChat: () => void;
   isOpen: boolean;
   onToggle: () => void;
 }
 
-export function Sidebar({ chats, currentChatId, onChatSelect, onNewChat, isOpen, onToggle }: SidebarProps) {
-  const [editingChatId, setEditingChatId] = useState<Id<"chats"> | null>(null);
-  const [editTitle, setEditTitle] = useState("");
+export function Sidebar({
+  chats,
+  currentChatId,
+  onChatSelect,
+  onNewChat,
+  isOpen,
+  onToggle,
+}: SidebarProps) {
+  const [editingChatId, setEditingChatId] = useState<Id<'chats'> | null>(null);
+  const [editTitle, setEditTitle] = useState('');
 
   const updateChatTitle = useMutation(api.chats.updateChatTitle);
   const deleteChat = useMutation(api.chats.deleteChat);
@@ -32,36 +42,36 @@ export function Sidebar({ chats, currentChatId, onChatSelect, onNewChat, isOpen,
     setEditTitle(chat.title);
   };
 
-  const handleEditSave = async (chatId: Id<"chats">) => {
+  const handleEditSave = async (chatId: Id<'chats'>) => {
     if (editTitle.trim()) {
       try {
         await updateChatTitle({ chatId, title: editTitle.trim() });
         setEditingChatId(null);
       } catch (error) {
-        toast.error("Failed to update chat title");
+        toast.error('Failed to update chat title');
       }
     }
   };
 
   const handleEditCancel = () => {
     setEditingChatId(null);
-    setEditTitle("");
+    setEditTitle('');
   };
 
-  const handleDelete = async (chatId: Id<"chats">) => {
-    if (confirm("Are you sure you want to delete this chat?")) {
+  const handleDelete = async (chatId: Id<'chats'>) => {
+    if (confirm('Are you sure you want to delete this chat?')) {
       try {
         await deleteChat({ chatId });
         if (currentChatId === chatId) {
           // If deleting current chat, select another or clear
-          const remainingChats = chats.filter(c => c._id !== chatId);
+          const remainingChats = chats.filter((c) => c._id !== chatId);
           if (remainingChats.length > 0) {
             onChatSelect(remainingChats[0]._id);
           }
         }
-        toast.success("Chat deleted");
+        toast.success('Chat deleted');
       } catch (error) {
-        toast.error("Failed to delete chat");
+        toast.error('Failed to delete chat');
       }
     }
   };
@@ -72,7 +82,10 @@ export function Sidebar({ chats, currentChatId, onChatSelect, onNewChat, isOpen,
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
     if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     } else if (diffInHours < 24 * 7) {
       return date.toLocaleDateString([], { weekday: 'short' });
     } else {
@@ -101,30 +114,21 @@ export function Sidebar({ chats, currentChatId, onChatSelect, onNewChat, isOpen,
           {/* Header */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-linear-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">AI</span>
-                </div>
+              <Link to="/" className="flex items-center space-x-3">
+                <img src="/logo.svg" alt="Logo" className="w-8 h-8" />
                 <h2 className="text-lg font-semibold text-gray-900">AI Chat</h2>
-              </div>
+              </Link>
               <button
                 onClick={onToggle}
                 className="p-1 hover:bg-gray-100 rounded lg:hidden"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <XIcon />
               </button>
             </div>
-            <button
-              onClick={onNewChat}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+            <Button onClick={onNewChat} className="w-full">
+              <PlusIcon />
               <span>New Chat</span>
-            </button>
+            </Button>
           </div>
 
           {/* Chat List */}
@@ -141,9 +145,10 @@ export function Sidebar({ chats, currentChatId, onChatSelect, onNewChat, isOpen,
                     key={chat._id}
                     className={`
                       group relative p-3 rounded-lg cursor-pointer transition-colors mb-1
-                      ${currentChatId === chat._id 
-                        ? 'bg-blue-50 border border-blue-200' 
-                        : 'hover:bg-gray-50'
+                      ${
+                        currentChatId === chat._id
+                          ? 'bg-blue-50 border border-blue-200'
+                          : 'hover:bg-gray-50'
                       }
                     `}
                     onClick={() => onChatSelect(chat._id)}
@@ -174,7 +179,7 @@ export function Sidebar({ chats, currentChatId, onChatSelect, onNewChat, isOpen,
                             </h3>
                             <div className="flex items-center justify-between mt-1">
                               <p className="text-xs text-gray-500 capitalize">
-                                {chat.model.replace("-", " ")}
+                                {chat.model.replace('-', ' ')}
                               </p>
                               <p className="text-xs text-gray-400">
                                 {formatDate(chat.updatedAt)}
@@ -194,8 +199,18 @@ export function Sidebar({ chats, currentChatId, onChatSelect, onNewChat, isOpen,
                             className="p-1 hover:bg-gray-200 rounded text-gray-500 hover:text-gray-700"
                             title="Edit title"
                           >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
                             </svg>
                           </button>
                           <button
@@ -206,8 +221,18 @@ export function Sidebar({ chats, currentChatId, onChatSelect, onNewChat, isOpen,
                             className="p-1 hover:bg-red-100 rounded text-gray-500 hover:text-red-600"
                             title="Delete chat"
                           >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
                             </svg>
                           </button>
                         </div>
