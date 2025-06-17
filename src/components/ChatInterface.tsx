@@ -47,24 +47,48 @@ export function ChatInterface({ user, onShowOnboarding }: ChatInterfaceProps) {
     scrollToBottom();
   }, [messages]);
 
-  const handleNewChat = async () => {
+  const handleNewChat = async (
+    title: string = 'New Chat',
+    modelOverride?: string
+  ) => {
     try {
       const availableModels = await models();
       const defaultModel =
         availableModels[0]?.id || 'gemini-2.5-flash-preview-05-20';
       const newChatId = await createChat({
-        title: 'New Chat',
-        model: defaultModel,
+        title,
+        model: modelOverride || defaultModel,
       });
       navigate(`/chat/${newChatId}`);
+      return newChatId;
     } catch (error) {
       toast.error('Failed to create new chat');
+      return null;
     }
   };
 
   const handleSendMessage = async (content: string, selectedModel?: string) => {
     if (!chatId) {
-      await handleNewChat();
+      setIsLoading(true);
+      try {
+        const model =
+          selectedModel ||
+          currentChat?.model ||
+          'gemini-2.5-flash-preview-05-20';
+        const newChatId = await handleNewChat(content, model);
+        if (!newChatId) return;
+        const apiKey = (await getActiveApiKey({ provider: 'google' }))?.apiKey;
+        await sendMessage({
+          chatId: newChatId,
+          message: content,
+          model,
+          apiKey,
+        });
+      } catch (error) {
+        toast.error('Failed to send message');
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -118,7 +142,7 @@ export function ChatInterface({ user, onShowOnboarding }: ChatInterfaceProps) {
         chats={chats || []}
         currentChatId={chatId}
         onChatSelect={handleChatSelect}
-        onNewChat={handleNewChat}
+        onNewChat={() => handleNewChat()}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
       />
@@ -181,7 +205,15 @@ export function ChatInterface({ user, onShowOnboarding }: ChatInterfaceProps) {
         <div className="flex-1 flex flex-col h-screen overflow-hidden">
           {chatId && messages ? (
             <>
-              <MessageList messages={messages} isLoading={isLoading} />
+              <MessageList
+                messages={
+                  // Filter out any messages that don't have a valid contentType
+                  (messages as any[]).filter(
+                    (m) => m.contentType === 'text' || m.contentType === 'image'
+                  ) as any
+                }
+                isLoading={isLoading}
+              />
               <div ref={messagesEndRef} />
               <MessageInput
                 onSendMessage={handleSendMessage}
@@ -203,7 +235,7 @@ export function ChatInterface({ user, onShowOnboarding }: ChatInterfaceProps) {
                   Start a conversation with AI models. Choose from Google's
                   Gemini and other powerful language models.
                 </p>
-                <Button onClick={handleNewChat}>Start New Chat</Button>
+                <Button onClick={() => handleNewChat()}>Start New Chat</Button>
               </div>
             </div>
           )}

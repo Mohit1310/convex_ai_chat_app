@@ -4,7 +4,7 @@ import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { toast } from 'sonner';
 import { Button } from './ui/button';
-import { PlusIcon, XIcon } from 'lucide-react';
+import { PencilIcon, PlusIcon, TrashIcon, XIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Chat {
@@ -98,16 +98,17 @@ export function Sidebar({
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-200"
           onClick={onToggle}
         />
       )}
 
       {/* Sidebar */}
-      <div
+      <aside
         className={`
           fixed lg:relative inset-y-0 left-0 z-50 w-80 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          flex flex-col h-full
         `}
       >
         <div className="flex flex-col h-full">
@@ -120,13 +121,17 @@ export function Sidebar({
               </Link>
               <button
                 onClick={onToggle}
-                className="p-1 hover:bg-gray-100 rounded lg:hidden"
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors lg:hidden"
+                aria-label="Toggle sidebar"
               >
-                <XIcon />
+                <XIcon className="w-5 h-5" />
               </button>
             </div>
-            <Button onClick={onNewChat} className="w-full">
-              <PlusIcon />
+            <Button
+              onClick={onNewChat}
+              className="w-full bg-primary hover:bg-primary/90 text-white"
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
               <span>New Chat</span>
             </Button>
           </div>
@@ -139,15 +144,15 @@ export function Sidebar({
                 <p className="text-sm mt-1">Start a new conversation</p>
               </div>
             ) : (
-              <div className="p-2">
+              <div className="p-2 space-y-1">
                 {chats.map((chat) => (
                   <div
                     key={chat._id}
                     className={`
-                      group relative p-3 rounded-lg cursor-pointer transition-colors mb-1
+                      group relative px-3 py-2 rounded-lg cursor-pointer transition-colors
                       ${
                         currentChatId === chat._id
-                          ? 'bg-blue-50 border border-blue-200'
+                          ? 'bg-primary/10 border border-primary/20'
                           : 'hover:bg-gray-50'
                       }
                     `}
@@ -168,7 +173,7 @@ export function Sidebar({
                                 handleEditCancel();
                               }
                             }}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
                             autoFocus
                             onClick={(e) => e.stopPropagation()}
                           />
@@ -177,14 +182,6 @@ export function Sidebar({
                             <h3 className="font-medium text-gray-900 truncate">
                               {chat.title}
                             </h3>
-                            <div className="flex items-center justify-between mt-1">
-                              <p className="text-xs text-gray-500 capitalize">
-                                {chat.model.replace('-', ' ')}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {formatDate(chat.updatedAt)}
-                              </p>
-                            </div>
                           </>
                         )}
                       </div>
@@ -199,19 +196,7 @@ export function Sidebar({
                             className="p-1 hover:bg-gray-200 rounded text-gray-500 hover:text-gray-700"
                             title="Edit title"
                           >
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                            </svg>
+                            <PencilIcon size={16} />
                           </button>
                           <button
                             onClick={(e) => {
@@ -221,19 +206,7 @@ export function Sidebar({
                             className="p-1 hover:bg-red-100 rounded text-gray-500 hover:text-red-600"
                             title="Delete chat"
                           >
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
+                            <TrashIcon size={16} />
                           </button>
                         </div>
                       )}
@@ -244,7 +217,7 @@ export function Sidebar({
             )}
           </div>
         </div>
-      </div>
+      </aside>
     </>
   );
 }

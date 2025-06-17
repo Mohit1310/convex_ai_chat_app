@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { CodeBlock } from './CodeBlock';
 import { CheckIcon, CopyIcon, DownloadIcon, XIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Components } from 'react-markdown';
 
 interface Message {
   _id: string;
@@ -79,39 +82,85 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         />
       );
     }
-    // Split content by code blocks
-    const parts = content.split(/(```[\s\S]*?```)/g);
 
-    return parts.map((part, index) => {
-      if (part.startsWith('```') && part.endsWith('```')) {
-        // Extract language and code
-        const lines = part.slice(3, -3).split('\n');
-        const language = lines[0].trim() || 'text';
-        const code = lines.slice(1).join('\n');
+    const components: Components = {
+      code({ className, children }) {
+        const match = /language-(\w+)/.exec(className || '');
+        const language = match ? match[1] : 'text';
+        const code = String(children).replace(/\n$/, '');
 
-        return <CodeBlock key={index} code={code} language={language} />;
-      } else {
-        // Regular text with inline code
-        const textParts = part.split(/(`[^`]+`)/g);
-        return textParts.map((textPart, textIndex) => {
-          if (textPart.startsWith('`') && textPart.endsWith('`')) {
-            return (
-              <code
-                key={`${index}-${textIndex}`}
-                className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-sm font-mono"
-              >
-                {textPart.slice(1, -1)}
-              </code>
-            );
-          }
+        // Check if this is a block code (```) or inline code (`)
+        const isBlockCode = className?.includes('language-');
+
+        if (!isBlockCode) {
           return (
-            <span key={`${index}-${textIndex}`} className="whitespace-pre-wrap">
-              {textPart}
-            </span>
+            <code className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-sm font-mono">
+              {code}
+            </code>
           );
-        });
-      }
-    });
+        }
+
+        return <CodeBlock code={code} language={language} />;
+      },
+      p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
+      h1: ({ children }) => (
+        <h1 className="text-2xl font-bold mb-4">{children}</h1>
+      ),
+      h2: ({ children }) => (
+        <h2 className="text-xl font-bold mb-3">{children}</h2>
+      ),
+      h3: ({ children }) => (
+        <h3 className="text-lg font-bold mb-2">{children}</h3>
+      ),
+      ul: ({ children }) => <ul className="list-disc pl-6 mb-4">{children}</ul>,
+      ol: ({ children }) => (
+        <ol className="list-decimal pl-6 mb-4">{children}</ol>
+      ),
+      li: ({ children }) => <li className="mb-1">{children}</li>,
+      blockquote: ({ children }) => (
+        <blockquote className="border-l-4 border-gray-200 pl-4 italic my-4">
+          {children}
+        </blockquote>
+      ),
+      a: ({ href, children }) => (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+        >
+          {children}
+        </a>
+      ),
+      table: ({ children }) => (
+        <div className="overflow-x-auto my-4">
+          <table className="min-w-full divide-y divide-gray-200">
+            {children}
+          </table>
+        </div>
+      ),
+      thead: ({ children }) => <thead className="bg-gray-50">{children}</thead>,
+      tbody: ({ children }) => (
+        <tbody className="bg-white divide-y divide-gray-200">{children}</tbody>
+      ),
+      tr: ({ children }) => <tr>{children}</tr>,
+      th: ({ children }) => (
+        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          {children}
+        </th>
+      ),
+      td: ({ children }) => (
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {children}
+        </td>
+      ),
+    };
+
+    return (
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {content}
+      </ReactMarkdown>
+    );
   };
 
   if (message.role === 'user') {

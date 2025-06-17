@@ -37,6 +37,11 @@ const Home = () => {
     navigate(`/chat/${chatId}`);
   };
 
+  const handleGenerateImage = (prompt: string) => {
+    console.log('Generating image for prompt:', prompt);
+    // You can handle image generation logic here
+  };
+
   return (
     <div className="h-screen flex relative">
       <Sidebar
@@ -61,7 +66,11 @@ const Home = () => {
             </p>
           </div>
         </div>
-        <MessageInput onSendMessage={handleSendMessage} disabled={false} />
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          disabled={false}
+          onGenrateImage={handleGenerateImage}
+        />
       </div>
     </div>
   );

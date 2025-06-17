@@ -51,8 +51,9 @@ export function MessageInput({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim && !disabled) {
-      const isImageGeneration =
-        selectedModel === 'gemini-2.5-flash-preview-05-20';
+      // Only treat actual image models as image generation
+      const imageModelIds = ['gemini-2.0-flash-preview-image-generation'];
+      const isImageGeneration = imageModelIds.includes(selectedModel);
 
       if (isImageGeneration) {
         onGenrateImage(message.trim());
@@ -60,13 +61,6 @@ export function MessageInput({
         onSendMessage(message.trim(), selectedModel || currentModel);
       }
     }
-    // if (message.trim() && !disabled) {
-    //   onSendMessage(message.trim(), selectedModel);
-    //   setMessage("");
-    //   if (textareaRef.current) {
-    //     textareaRef.current.style.height = 'auto';
-    //   }
-    // }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
